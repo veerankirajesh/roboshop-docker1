@@ -1,22 +1,8 @@
-FROM node:20
-
-# App port
+FROM node:18
 EXPOSE 8080
-
-# Set working directory
 WORKDIR /opt/server
-
-# Enable Mongo flag
 ENV MONGO=true
-
-# Copy dependencies first (for layer caching)
-COPY package.json ./
-
-# Install dependencies
+COPY package.json /opt/server/
+COPY server.js /opt/server/
 RUN npm install
-
-# Copy the rest of the code
-COPY server.js ./
-
-# Start the app
-CMD ["node", "server.js"]
+CMD [ "node", "server.js" ]
