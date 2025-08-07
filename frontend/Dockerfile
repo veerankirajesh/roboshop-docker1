@@ -1,32 +1,20 @@
-# Stage 1: Build with Node
-FROM node:20-alpine3.21 AS builder
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install
-
-COPY . .
-RUN npm run build
-
-
-# Stage 2: Serve with NGINX
 FROM nginx:1.29.0-alpine
-
-# Remove default nginx config
-RUN rm -f /etc/nginx/nginx.conf /etc/nginx/conf.d/default.conf
-
-# Add your custom nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Copy static files from builder
-COPY --from=builder /app/dist /usr/share/nginx/html/
-
-# Optional permissions
-RUN mkdir -p /var/cache/nginx && \
-    chown -R nginx:nginx /var/cache/nginx /etc/nginx /usr/share/nginx/html && \
-    chmod -R 755 /etc/nginx
-
+RUN rm /etc/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+RUN mkdir -p /var/cache/nginx/client_temp && \
+        mkdir -p /var/cache/nginx/proxy_temp && \
+        mkdir -p /var/cache/nginx/fastcgi_temp && \
+        mkdir -p /var/cache/nginx/uwsgi_temp && \
+        mkdir -p /var/cache/nginx/scgi_temp && \
+        chown -R nginx:nginx /var/cache/nginx && \
+        chown -R nginx:nginx /etc/nginx/ && \
+        chmod -R 755 /etc/nginx/ && \
+        chown -R nginx:nginx /var/log/nginx
+RUN mkdir -p /etc/nginx/ssl/ && \
+    chown -R nginx:nginx /etc/nginx/ssl/ && \
+    chmod -R 755 /etc/nginx/ssl/
+RUN touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid /run/nginx.pid
+ADD nginx.conf /etc/nginx/nginx.conf
+ADD static /usr/share/nginx/html/
 USER nginx
-
 CMD ["nginx", "-g", "daemon off;"]
