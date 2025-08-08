@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   default:
     external: true
@@ -9,34 +7,27 @@ services:
   # Equivalent to: docker run -d --name mongodb --network=roboshop mongodb:1
   mongodb:
     image: mongodb:1
-    # networks:
-      # - roboshop
 
   # Equivalent to: docker run -d --name catalogue --network=roboshop catalogue:1
   catalogue:
     image: catalogue:1
-    # networks:
-      # - roboshop
     depends_on:
       - mongodb
 
   redis:
-   image: redis:1
+    image: redis:7   # Changed from redis:1 to redis:7 (official tag)
 
   user:
-   image: user:1
-   depends_on:
-     - redis 
-     - mongodb
+    image: user:1
+    depends_on:
+      - redis
+      - mongodb
 
   cart:
-   image: cart:1
-   depends_on:
-    - catalogue
-    - mongodb   
-    
-    
-      
+    image: cart:1
+    depends_on:
+      - catalogue
+      - mongodb   
 
   frontend:
     image: frontend:1
@@ -48,6 +39,3 @@ services:
       # - cart
       # - shipping
       # - payment
-
-
-  
