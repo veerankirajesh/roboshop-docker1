@@ -1,0 +1,33 @@
+version: '3.8'
+
+networks:
+  default:
+    external:
+      name: roboshop
+
+services:
+  # Equivalent to: docker run -d --name mongodb --network=roboshop mongodb:1
+  mongodb:
+    image: mongodb:1
+    # networks:
+      # - roboshop
+
+  # Equivalent to: docker run -d --name catalogue --network=roboshop catalogue:1
+  catalogue:
+    image: catalogue:1
+    # networks:
+      # - roboshop
+    depends_on:
+      - mongodb
+
+  frontend:
+    image: frontend:1
+    ports:
+      - "80:80"
+    depends_on:
+      - catalogue
+      # - user
+      # - cart
+      # - shipping
+      # - payment
+  
