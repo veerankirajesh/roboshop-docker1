@@ -23,7 +23,7 @@ services:
       - catalogue
 
   redis:
-    image: redis:alpine  # Or your custom redis image name:tag
+    image: redis
 
   user:
     image: user:1
