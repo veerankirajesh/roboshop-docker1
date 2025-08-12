@@ -4,35 +4,40 @@ networks:
     name: roboshop
 
 services:
-  # docker run -d --name mongodb --network=roboshop mongodb:1
+  # MongoDB service
   mongodb:
-    image: mongodb:1
-    # networks:
-    # - roboshop
+    image: mongo:4.4           # official MongoDB image
+    container_name: mongodb
 
+  # Catalogue service
   catalogue:
-    image: catalogue:1
+    image: catalogue:1         # your custom image (must exist locally)
     depends_on:
       - mongodb
 
+  # Frontend service
   frontend:
-    image: frontend:1
+    image: frontend:1          # your custom image (must exist locally)
     ports:
       - "80:80"
     depends_on:
       - catalogue
 
+  # Redis service
   redis:
-    image: redis
+    image: redis:6-alpine      # official Redis image
+    container_name: redis
 
+  # User service
   user:
-    image: user:1
+    image: user:1              # your custom image (must exist locally)
     depends_on:
       - redis
-      - mongodb  
+      - mongodb
 
+  # Cart service
   cart:
-    image: cart:1
+    image: cart:1              # your custom image (must exist locally)
     depends_on:
       - redis
       - catalogue
