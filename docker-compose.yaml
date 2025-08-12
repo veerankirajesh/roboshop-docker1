@@ -6,8 +6,7 @@ networks:
 services:
   # MongoDB service
   mongodb:
-    image: mongo:1         # official MongoDB image
-  
+    image: mongo:4.4           # official MongoDB image (valid tag)
 
   # Catalogue service
   catalogue:
@@ -25,8 +24,7 @@ services:
 
   # Redis service
   redis:
-    image: redis:1     # official Redis image
-
+    image: redis:6-alpine      # official Redis image (valid tag)
 
   # User service
   user:
