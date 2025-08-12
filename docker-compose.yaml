@@ -12,14 +12,14 @@ services:
   catalogue:
     image: catalogue:1
     depends_on:
-      - mongodis
-      
+    - mongod
+
   frontend:
     image: frontend:1
     ports:
-      - "80:80"
+    - "80:80"
     depends_on:
-      - catalogue
+    - catalogue
       # - user
       # - cart
       # - shipping
