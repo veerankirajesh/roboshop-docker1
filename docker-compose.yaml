@@ -6,8 +6,8 @@ networks:
 services:
   # MongoDB service
   mongodb:
-    image: mongo:1.2          # official MongoDB image
-    container_name: mongodb
+    image: mongo:1         # official MongoDB image
+  
 
   # Catalogue service
   catalogue:
@@ -26,7 +26,7 @@ services:
   # Redis service
   redis:
     image: redis:1     # official Redis image
-    container_name: redis
+
 
   # User service
   user:
