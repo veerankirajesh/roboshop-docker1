@@ -15,7 +15,7 @@ services:
       - mongodb
 
   redis:
-    image: redis:7   # Changed from redis:1 to redis:7 (official tag)
+    image: redis  # Changed from redis:1 to redis:7 (official tag)
 
   user:
     image: user:1
