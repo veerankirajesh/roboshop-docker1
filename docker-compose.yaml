@@ -17,8 +17,8 @@ services:
     depends_on:
     - mongodb
 
-  web:
-    image: web:1
+  frontend:
+    image: frontend:1
     ports:
     - "80:80"
     depends_on:
