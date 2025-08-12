@@ -17,10 +17,10 @@ services:
   redis:
     image: redis
     container_name: redis
-    volumes:
-    - source: redis
-      target: /data
-      type: volume
+    # volumes:
+    # - source: redis
+      # target: /data
+      # type: volume
   
 
   user:
