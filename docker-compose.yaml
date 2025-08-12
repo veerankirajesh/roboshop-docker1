@@ -12,19 +12,27 @@ services:
 
   catalogue:
     image: catalogue:1
-    # networks:
-    # - roboshop
     depends_on:
-    - mongodb
+      - mongodb
 
   frontend:
     image: frontend:1
     ports:
-    - "80:80"
+      - "80:80"
     depends_on:
-    - catalogue
+      - catalogue
 
+  redis:
+    image: redis:alpine  # Or your custom redis image name:tag
 
+  user:
+    image: user:1
+    depends_on:
+      - redis
+      - mongodb  
 
-
-
+  cart:
+    image: cart:1
+    depends_on:
+      - redis
+      - catalogue
