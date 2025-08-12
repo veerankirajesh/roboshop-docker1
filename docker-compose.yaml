@@ -12,29 +12,8 @@ services:
   catalogue:
     image: catalogue:1
     depends_on:
-      - mongodb
-
-  redis:
-    image: redis
-    container_name: redis
-    # volumes:
-    # - source: redis
-      # target: /data
-      # type: volume
-  
-
-  user:
-    image: user:1
-    depends_on:
-      - redis
-      - mongodb
-
-  cart:
-    image: cart:1
-    depends_on:
-      - catalogue
-      - mongodb   
-
+      - mongodis
+      
   frontend:
     image: frontend:1
     ports:
