@@ -10,9 +10,10 @@ services:
 
   # Equivalent to: docker run -d --name catalogue --network=roboshop catalogue:1
   catalogue:
-    image: catalogue:1
-    depends_on:
-    - mongod
+   image: catalogue:1
+   depends_on:
+    - mongodb
+
 
   frontend:
     image: frontend:1
