@@ -1,9 +1,23 @@
 FROM node:20-alpine3.21 AS builder
-EXPOSE 8080
+
+# Set working directory
 WORKDIR /opt/server
+
+# Optional: Set environment variable
 ENV MONGO=true
 
-COPY package.json /opt/server/
-COPY server.js /opt/server/
-RUN npm install
-CMD [ "node", "server.js" ]
+# Copy only package.json and package-lock.json first (better caching)
+COPY package.json package-lock.json* ./
+
+# Clean npm cache before install
+RUN npm cache clean --force \
+    && npm install --force
+
+# Now copy the rest of the files
+COPY server.js .
+
+# Expose port
+EXPOSE 8080
+
+# Start the app
+CMD ["node", "server.js"]
