@@ -10,8 +10,7 @@ ENV MONGO=true
 COPY package.json package-lock.json* ./
 
 # Clean npm cache before install
-RUN npm cache clean --force \
-    && npm install --force
+RUN rm -rf /root/.npm && npm cache clean --force && npm install --force
 
 # Now copy the rest of the files
 COPY server.js .
