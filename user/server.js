@@ -1,24 +1,16 @@
-const instana = require('@instana/collector');
-// init tracing
-// MUST be done before loading anything else!
-instana({
-    tracing: {
-        enabled: true
-    }
-});
- 
-const { MongoClient, ObjectId } = require('mongodb');
-const { createClient } = require('redis');
+const mongoClient = require('mongodb').MongoClient;
+const mongoObjectID = require('mongodb').ObjectID;
+const redis = require('redis');
 const bodyParser = require('body-parser');
 const express = require('express');
 const pino = require('pino');
 const expPino = require('express-pino-logger');
 
 // MongoDB
-let db;
-let usersCollection;
-let ordersCollection;
-let mongoConnected = false;
+var db;
+var usersCollection;
+var ordersCollection;
+var mongoConnected = false;
 
 const logger = pino({
     level: 'info',
@@ -27,6 +19,7 @@ const logger = pino({
 });
 const expLogger = expPino({
     logger: logger
+
 });
 
 const app = express();
@@ -39,25 +32,11 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use((req, res, next) => {
-    let dcs = [
-        "asia-northeast2",
-        "asia-south1",
-        "europe-west3",
-        "us-east1",
-        "us-west1"
-    ];
-    let span = instana.currentSpan();
-    span.annotate('custom.sdk.tags.datacenter', dcs[Math.floor(Math.random() * dcs.length)]);
-
-    next();
-});
-
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.get('/health', (req, res) => {
-    const stat = {
+    var stat = {
         app: 'OK',
         mongo: mongoConnected
     };
@@ -65,32 +44,33 @@ app.get('/health', (req, res) => {
 });
 
 // use REDIS INCR to track anonymous users
-app.get('/uniqueid', async (req, res) => {
-    try {
-        const r = await redisClient.incr('anonymous-counter');
-        res.json({
-            uuid: 'anonymous-' + r
-        });
-    } catch (err) {
-        req.log.error('ERROR', err);
-        res.status(500).send(err);
-    }
+app.get('/uniqueid', (req, res) => {
+    // get number from Redis
+    redisClient.incr('anonymous-counter', (err, r) => {
+        if(!err) {
+            res.json({
+                uuid: 'anonymous-' + r
+            });
+        } else {
+            req.log.error('ERROR', err);
+            res.status(500).send(err);
+        }
+    });
 });
 
 // check user exists
-app.get('/check/:id', async (req, res) => {
-    if (mongoConnected) {
-        try {
-            const user = await usersCollection.findOne({ name: req.params.id });
-            if (user) {
+app.get('/check/:id', (req, res) => {
+    if(mongoConnected) {
+        usersCollection.findOne({name: req.params.id}).then((user) => {
+            if(user) {
                 res.send('OK');
             } else {
                 res.status(404).send('user not found');
             }
-        } catch (e) {
+        }).catch((e) => {
             req.log.error(e);
-            res.status(500).send(e);
-        }
+            res.send(500).send(e);
+        });
     } else {
         req.log.error('database not available');
         res.status(500).send('database not available');
@@ -98,34 +78,32 @@ app.get('/check/:id', async (req, res) => {
 });
 
 // return all users for debugging only
-app.get('/users', async (req, res) => {
-    if (mongoConnected) {
-        try {
-            const users = await usersCollection.find().toArray();
+app.get('/users', (req, res) => {
+    if(mongoConnected) {
+        usersCollection.find().toArray().then((users) => {
             res.json(users);
-        } catch (e) {
+        }).catch((e) => {
             req.log.error('ERROR', e);
             res.status(500).send(e);
-        }
+        });
     } else {
         req.log.error('database not available');
         res.status(500).send('database not available');
     }
 });
 
-app.post('/login', async (req, res) => {
+app.post('/login', (req, res) => {
     req.log.info('login', req.body);
-    if (req.body.name === undefined || req.body.password === undefined) {
+    if(req.body.name === undefined || req.body.password === undefined) {
         req.log.warn('credentails not complete');
         res.status(400).send('name or passowrd not supplied');
-    } else if (mongoConnected) {
-        try {
-            const user = await usersCollection.findOne({
-                name: req.body.name,
-            });
+    } else if(mongoConnected) {
+        usersCollection.findOne({
+            name: req.body.name,
+        }).then((user) => {
             req.log.info('user', user);
-            if (user) {
-                if (user.password == req.body.password) {
+            if(user) {
+                if(user.password == req.body.password) {
                     res.json(user);
                 } else {
                     res.status(404).send('incorrect password');
@@ -133,10 +111,10 @@ app.post('/login', async (req, res) => {
             } else {
                 res.status(404).send('name not found');
             }
-        } catch (e) {
+        }).catch((e) => {
             req.log.error('ERROR', e);
             res.status(500).send(e);
-        }
+        });
     } else {
         req.log.error('database not available');
         res.status(500).send('database not available');
@@ -144,90 +122,109 @@ app.post('/login', async (req, res) => {
 });
 
 // TODO - validate email address format
-app.post('/register', async (req, res) => {
+app.post('/register', (req, res) => {
     req.log.info('register', req.body);
-    if (req.body.name === undefined || req.body.password === undefined || req.body.email === undefined) {
+    if(req.body.name === undefined || req.body.password === undefined || req.body.email === undefined) {
         req.log.warn('insufficient data');
         res.status(400).send('insufficient data');
-    } else if (mongoConnected) {
-        try {
-            const user = await usersCollection.findOne({ name: req.body.name });
-            if (user) {
+    } else if(mongoConnected) {
+        // check if name already exists
+        usersCollection.findOne({name: req.body.name}).then((user) => {
+            if(user) {
                 req.log.warn('user already exists');
                 res.status(400).send('name already exists');
             } else {
-                const r = await usersCollection.insertOne({
+                // create new user
+                usersCollection.insertOne({
                     name: req.body.name,
                     password: req.body.password,
                     email: req.body.email
+                }).then((r) => {
+                    req.log.info('inserted', r.result);
+                    res.send('OK');
+                }).catch((e) => {
+                    req.log.error('ERROR', e);
+                    res.status(500).send(e);
                 });
-                req.log.info('inserted', r.result);
-                res.send('OK');
             }
-        } catch (e) {
+        }).catch((e) => {
             req.log.error('ERROR', e);
             res.status(500).send(e);
-        }
+        });
     } else {
         req.log.error('database not available');
         res.status(500).send('database not available');
     }
 });
 
-app.post('/order/:id', async (req, res) => {
+app.post('/order/:id', (req, res) => {
     req.log.info('order', req.body);
-    if (mongoConnected) {
-        try {
-            const user = await usersCollection.findOne({
-                name: req.params.id
-            });
-            if (user) {
-                const history = await ordersCollection.findOne({
+    // only for registered users
+    if(mongoConnected) {
+        usersCollection.findOne({
+            name: req.params.id
+        }).then((user) => {
+            if(user) {
+                // found user record
+                // get orders
+                ordersCollection.findOne({
                     name: req.params.id
+                }).then((history) => {
+                    if(history) {
+                        var list = history.history;
+                        list.push(req.body);
+                        ordersCollection.updateOne(
+                            { name: req.params.id },
+                            { $set: { history: list }}
+                        ).then((r) => {
+                            res.send('OK');
+                        }).catch((e) => {
+                            req.log.error(e);
+                            res.status(500).send(e);
+                        });
+                    } else {
+                        // no history
+                        ordersCollection.insertOne({
+                            name: req.params.id,
+                            history: [ req.body ]
+                        }).then((r) => {
+                            res.send('OK');
+                        }).catch((e) => {
+                            req.log.error(e);
+                            res.status(500).send(e);
+                        });
+                    }
+                }).catch((e) => {
+                    req.log.error(e);
+                    res.status(500).send(e);
                 });
-                if (history) {
-                    const list = history.history;
-                    list.push(req.body);
-                    await ordersCollection.updateOne(
-                        { name: req.params.id },
-                        { $set: { history: list } }
-                    );
-                    res.send('OK');
-                } else {
-                    await ordersCollection.insertOne({
-                        name: req.params.id,
-                        history: [req.body]
-                    });
-                    res.send('OK');
-                }
             } else {
                 res.status(404).send('name not found');
             }
-        } catch (e) {
+        }).catch((e) => {
             req.log.error(e);
             res.status(500).send(e);
-        }
+        });
     } else {
         req.log.error('database not available');
         res.status(500).send('database not available');
     }
 });
 
-app.get('/history/:id', async (req, res) => {
-    if (mongoConnected) {
-        try {
-            const history = await ordersCollection.findOne({
-                name: req.params.id
-            });
-            if (history) {
+app.get('/history/:id', (req, res) => {
+    if(mongoConnected) {
+        ordersCollection.findOne({
+            name: req.params.id
+        }).then((history) => {
+            if(history) {
                 res.json(history);
             } else {
                 res.status(404).send('history not found');
             }
-        } catch (e) {
+        }).catch((e) => {
             req.log.error(e);
             res.status(500).send(e);
-        }
+        });
     } else {
         req.log.error('database not available');
         res.status(500).send('database not available');
@@ -235,37 +232,67 @@ app.get('/history/:id', async (req, res) => {
 });
 
 // connect to Redis
-const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
+var redisClient = redis.createClient({
+    host: process.env.REDIS_HOST || 'redis'
 });
 
 redisClient.on('error', (e) => {
     logger.error('Redis ERROR', e);
 });
-redisClient.on('connect', () => {
-    logger.info('Redis connected');
+redisClient.on('ready', (r) => {
+    logger.info('Redis READY', r);
 });
-redisClient.connect();
 
+if (process.env.MONGO == 'true') {
 // set up Mongo
-async function mongoConnect() {
-    try {
-        const mongoURL = process.env.MONGO_URL || 'mongodb://localhost:27017/users';
-        const client = await MongoClient.connect(mongoURL, { useNewUrlParser: true, useUnifiedTopology: true });
+function mongoConnect() {
+    return new Promise((resolve, reject) => {
+        var mongoURL = process.env.MONGO_URL || 'mongodb://mongodb:27017/users';
+        mongoClient.connect(mongoURL, (error, client) => {
+            if(error) {
+                reject(error);
+            } else {
+                db = client.db('users');
+                usersCollection = db.collection('users');
+                ordersCollection = db.collection('orders');
+                resolve('connected');
+            }
+        });
+    });
+}
+}
+
+if (process.env.DOCUMENTDB == 'true') {
+function mongoConnect() {
+    return new Promise((resolve, reject) => {
+    var mongoURL = process.env.MONGO_URL || 'mongodb://username:password@mongodb:27017/users?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false';
+    var client = mongoClient.connect(mongoURL,
+      {
+        // Mutable & Immutable
+        //tlsCAFile: `/home/roboshop/user/rds-combined-ca-bundle.pem` //Specify the DocDB; cert
+        // Container
+        tlsCAFile: `/app/rds-combined-ca-bundle.pem` //Specify the DocDB; cert
+    }, (error, client) => {
+    if(error) {
+        reject(error);
+    } else {
         db = client.db('users');
         usersCollection = db.collection('users');
         ordersCollection = db.collection('orders');
-        mongoConnected = true;
-        logger.info('MongoDB connected');
-    } catch (error) {
-        mongoConnected = false;
-        logger.error('ERROR', error);
-        setTimeout(mongoLoop, 2000);
+        resolve('connected');
     }
+});
+});
+}
 }
 
+
+
 function mongoLoop() {
-    mongoConnect().catch((e) => {
+    mongoConnect().then((r) => {
+        mongoConnected = true;
+        logger.info('MongoDB connected');
+    }).catch((e) => {
         logger.error('ERROR', e);
         setTimeout(mongoLoop, 2000);
     });
@@ -278,3 +305,4 @@ const port = process.env.USER_SERVER_PORT || '8080';
 app.listen(port, () => {
     logger.info('Started on port', port);
 });
+
