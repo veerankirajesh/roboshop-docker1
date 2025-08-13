@@ -1,0 +1,41 @@
+networks:
+  default:
+    driver: bridge
+    name: roboshop
+    external: true
+
+services:
+  mongodb:
+    image: mongodb:1
+    container_name: mongodb
+  catalogue:
+    image: catalogue:1
+    container_name: catalogue
+    depends_on:
+    - mongodb
+  redis:
+    image: redis:7.0
+    container_name: redis
+  user:
+    image: user:1
+    container_name: user
+    depends_on:
+    - redis
+    - mongodb
+  cart:
+    image: cart:1
+    container_name: cart
+    depends_on:
+    - catalogue
+    - redis
+
+  frontend:
+    image: frontend:1
+    container_name: frontend
+    ports:
+    - "80:80"
+    depends_on:
+    - catalogue
+    - user
+    - cart
+      
