@@ -32,13 +32,34 @@ services:
   mysql:
     image: mysql:1
     container_name: mysql
+  
   shipping:
     image: shipping:1
     container_name: shipping
     depends_on:
     - mysql
-    - cart  
-
+    - cart
+  rabbitmq:
+    image: rabbitmq:3
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: roboshop
+      RABBITMQ_DEFAULT_PASS: roboshop123
+  payment:
+    image: payment:1
+    container_name: payment
+    environment:
+      CART_HOST: cart
+      CART_PORT: 8080
+      USER_HOST: user
+      USER_PORT: 8080
+      AMQP_HOST: rabbitmq
+      AMQP_USER: roboshop
+      AMQP_PASS: roboshop123
+    depends_on:
+    - rabbitmq
+    - cart
+    - user
   frontend:
     image: frontend:1
     container_name: frontend
@@ -48,4 +69,9 @@ services:
     - catalogue
     - user
     - cart
+    - shipping
+    - payment
+  
+  
+  
       
