@@ -1,5 +1,4 @@
 import random
-
 import instana
 import os
 import sys
@@ -9,10 +8,7 @@ import uuid
 import json
 import requests
 import traceback
-from flask import Flask
-from flask import Response
-from flask import request
-from flask import jsonify
+from flask import Flask, Response, request, jsonify
 from rabbitmq import Publisher
 # Prometheus
 import prometheus_client
@@ -22,16 +18,16 @@ app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 
 CART = os.getenv('CART_HOST', 'cart')
-CART_PORT = os.getenv('CART_PORT', 8080)
+CART_PORT = os.getenv('CART_PORT', "8080")
 USER = os.getenv('USER_HOST', 'user')
-USER_PORT = os.getenv('USER_PORT', 8080)
+USER_PORT = os.getenv('USER_PORT', "8080")
 PAYMENT_GATEWAY = os.getenv('PAYMENT_GATEWAY', 'https://google.com/')
 
 # Prometheus
 PromMetrics = {}
 PromMetrics['SOLD_COUNTER'] = Counter('sold_count', 'Running count of items sold')
-PromMetrics['AUS'] = Histogram('units_sold', 'Avergae Unit Sale', buckets=(1, 2, 5, 10, 100))
-PromMetrics['AVS'] = Histogram('cart_value', 'Avergae Value Sale', buckets=(100, 200, 500, 1000, 2000, 5000, 10000))
+PromMetrics['AUS'] = Histogram('units_sold', 'Average Unit Sale', buckets=(1, 2, 5, 10, 100))
+PromMetrics['AVS'] = Histogram('cart_value', 'Average Value Sale', buckets=(100, 200, 500, 1000, 2000, 5000, 10000))
 
 
 @app.errorhandler(Exception)
@@ -39,9 +35,11 @@ def exception_handler(err):
     app.logger.error(str(err))
     return str(err), 500
 
+
 @app.route('/health', methods=['GET'])
 def health():
     return 'OK'
+
 
 # Prometheus
 @app.route('/metrics', methods=['GET'])
@@ -50,7 +48,7 @@ def metrics():
     for m in PromMetrics.values():
         res.append(prometheus_client.generate_latest(m))
 
-    return Response(res, mimetype='text/plain')
+    return Response(b''.join(res), mimetype='text/plain')
 
 
 @app.route('/pay/<id>', methods=['POST'])
@@ -71,17 +69,16 @@ def pay(id):
         anonymous_user = False
 
     # check that the cart is valid
-    # this will blow up if the cart is not valid
     has_shipping = False
     for item in cart.get('items'):
         if item.get('sku') == 'SHIP':
             has_shipping = True
 
-    if cart.get('total', 0) == 0 or has_shipping == False:
-        app.logger.warn('cart not valid')
+    if cart.get('total', 0) == 0 or not has_shipping:
+        app.logger.warning('cart not valid')
         return 'cart not valid', 400
 
-    # dummy call to payment gateway, hope they dont object
+    # dummy call to payment gateway
     try:
         req = requests.get(PAYMENT_GATEWAY)
         app.logger.info('{} returned {}'.format(PAYMENT_GATEWAY, req.status_code))
@@ -92,7 +89,6 @@ def pay(id):
         return 'payment error', req.status_code
 
     # Prometheus
-    # items purchased
     item_count = countItems(cart.get('items', []))
     PromMetrics['SOLD_COUNTER'].inc(item_count)
     PromMetrics['AUS'].observe(item_count)
@@ -100,14 +96,16 @@ def pay(id):
 
     # Generate order id
     orderid = str(uuid.uuid4())
-    queueOrder({ 'orderid': orderid, 'user': id, 'cart': cart })
+    queueOrder({'orderid': orderid, 'user': id, 'cart': cart})
 
     # add to order history
     if not anonymous_user:
         try:
-            req = requests.post('http://{user}:{userPort}/order/{id}'.format(user=USER,userPort=USER_PORT, id=id),
-                    data=json.dumps({'orderid': orderid, 'cart': cart}),
-                    headers={'Content-Type': 'application/json'})
+            req = requests.post(
+                'http://{user}:{userPort}/order/{id}'.format(user=USER, userPort=USER_PORT, id=id),
+                data=json.dumps({'orderid': orderid, 'cart': cart}),
+                headers={'Content-Type': 'application/json'}
+            )
             app.logger.info('order history returned {}'.format(req.status_code))
         except requests.exceptions.RequestException as err:
             app.logger.error(err)
@@ -115,7 +113,7 @@ def pay(id):
 
     # delete cart
     try:
-        req = requests.delete('http://{cart}:{cartPort}/cart/{id}'.format(cart=CART, cartPort=CART_PORT, id=id));
+        req = requests.delete('http://{cart}:{cartPort}/cart/{id}'.format(cart=CART, cartPort=CART_PORT, id=id))
         app.logger.info('cart delete returned {}'.format(req.status_code))
     except requests.exceptions.RequestException as err:
         app.logger.error(err)
@@ -123,14 +121,13 @@ def pay(id):
     if req.status_code != 200:
         return 'order history update error', req.status_code
 
-    return jsonify({ 'orderid': orderid })
+    return jsonify({'orderid': orderid})
 
 
 def queueOrder(order):
     app.logger.info('queue order')
 
-    # For screenshot demo requirements optionally add in a bit of delay
-    delay = int(os.getenv('PAYMENT_DELAY_MS', 0))
+    delay = int(os.getenv('PAYMENT_DELAY_MS', "0"))
     time.sleep(delay / 1000)
 
     headers = {}
@@ -142,7 +139,6 @@ def countItems(items):
     for item in items:
         if item.get('sku') != 'SHIP':
             count += item.get('qty')
-
     return count
 
 
