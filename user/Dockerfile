@@ -1,4 +1,4 @@
-FROM node:current-alpine3.22
+FROM node:20.19.4-alpine3.22
 WORKDIR /opt/server
 ENV MONGO="true"
 ENV REDIS_URL="redis://redis:6379"
