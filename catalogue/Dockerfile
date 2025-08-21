@@ -1,4 +1,4 @@
-FROM node:20-alpine3.21 AS builder
+FROM node:current-alpine3.22 AS builder
 EXPOSE 8080
 WORKDIR /opt/server
 ENV MONGO=true
