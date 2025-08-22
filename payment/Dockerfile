@@ -1,5 +1,5 @@
 #CMD ["sleep", "1000"]
-FROM python:3.9
+FROM python:3.14.0rc2-alpine3.22
 EXPOSE 8080
 WORKDIR /opt/server
 COPY requirements.txt .
