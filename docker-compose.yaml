@@ -2,7 +2,7 @@ networks:
   default:
     driver: bridge
     name: roboshop
-    #external: true #I created network already using docker network create roboshop
+    external: true #I created network already using docker network create roboshop
 volumes:
   mongodb:
   redis:
