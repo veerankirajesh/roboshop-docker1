@@ -3,11 +3,20 @@ networks:
     driver: bridge
     name: roboshop
     external: true
+volumes:
+  mongodb: # docker create mongodb
+  redis:
+  mysql:
+  rabbitmq:    
 
 services:
   mongodb:
     image: mongodb:1
     container_name: mongodb
+    volumes:
+    - source: mongodb
+      target: /data/db 
+      type: volume
   catalogue:
     image: catalogue:1
     container_name: catalogue
@@ -16,6 +25,11 @@ services:
   redis:
     image: redis:7.0
     container_name: redis
+    volumes:
+    - source: redis
+      target: /data
+      type: volume
+        
   user:
     image: user:1
     container_name: user
@@ -32,6 +46,10 @@ services:
   mysql:
     image: mysql:1
     container_name: mysql
+    volumes:
+    - source: redis
+      target: /var/lib/mysql
+      type: volume
   
   shipping:
     image: shipping:1
@@ -45,6 +63,10 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: roboshop
       RABBITMQ_DEFAULT_PASS: roboshop123
+    volumes:
+    - source: rabbitmq
+      target: /var/lib/rabbitmq
+      type: volume  
   payment:
     image: payment:1
     container_name: payment
