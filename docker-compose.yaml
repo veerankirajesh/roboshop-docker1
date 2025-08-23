@@ -1,49 +1,52 @@
+networks:
+  default:
+    driver: bridge
+    name: roboshop
+    external: true #I created network already using docker network create roboshop
+volumes:
+  mongodb:
+  redis:
+  mysql:
+  rabbitmq: # docker volume create rabbitmq
 services:
   mongodb:
-    image: mongodb:1
+    image: rajesh028/mongodb:v1
     container_name: mongodb
     volumes:
-      - mongodb:/data/db
-
+    - mongodb:/data/db
   catalogue:
-    image: catalogue:1
+    image: rajesh028/catalogue:v1
     container_name: catalogue
     depends_on:
-      - mongodb
-
+    - mongodb
   redis:
     image: redis:7.0
     container_name: redis
     volumes:
-      - redis:/data
-
+    - redis:/data
   user:
-    image: user:1
+    image: rajesh028/user:v1
     container_name: user
     depends_on:
-      - redis
-      - mongodb
-
+    - redis
+    - mongodb
   cart:
-    image: cart:1
+    image: rajesh028/cart:v1
     container_name: cart
     depends_on:
-      - catalogue
-      - redis
-
+    - catalogue
+    - redis
   mysql:
-    image: mysql:1
+    image: rajesh028/mysql:v1
     container_name: mysql
     volumes:
-      - mysql:/var/lib/mysql
-
+    - mysql:/var/lib/mysql
   shipping:
-    image: shipping:1
+    image: rajesh028/shipping:v1
     container_name: shipping
     depends_on:
-      - mysql
-      - cart
-
+    - mysql
+    - cart
   rabbitmq:
     image: rabbitmq:3
     container_name: rabbitmq
@@ -51,10 +54,9 @@ services:
       RABBITMQ_DEFAULT_USER: roboshop
       RABBITMQ_DEFAULT_PASS: roboshop123
     volumes:
-      - rabbitmq:/var/lib/rabbitmq
-
+    - rabbitmq:/var/lib/rabbitmq
   payment:
-    image: payment:1
+    image: rajesh028/payment:v1
     container_name: payment
     environment:
       CART_HOST: cart
@@ -65,18 +67,18 @@ services:
       AMQP_USER: roboshop
       AMQP_PASS: roboshop123
     depends_on:
-      - rabbitmq
-      - cart
-      - user
-
+    - rabbitmq
+    - cart
+    - user
   frontend:
-    image: frontend:1
+    image: rajesh028/frontend:v1
     container_name: frontend
     ports:
-      - "80:80"
+    - "80:80"
     depends_on:
-      - catalogue
-      - user
-      - cart
-      - shipping
-      - payment
+    - catalogue
+    - user
+    - cart
+    - shipping
+    - payment
+      
