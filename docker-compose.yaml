@@ -1,12 +1,12 @@
 services:
   mongodb:
-    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh/mongodb:1
+    image: mongodb:1
     container_name: mongodb
     volumes:
       - mongodb:/data/db
 
   catalogue:
-    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh/catalogue:1
+    image: catalogue:1
     container_name: catalogue
     depends_on:
       - mongodb
@@ -18,34 +18,34 @@ services:
       - redis:/data
 
   user:
-    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh/user:1
+    image: user:1
     container_name: user
     depends_on:
       - redis
       - mongodb
 
   cart:
-    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh/cart:1
+    image: cart:1
     container_name: cart
     depends_on:
       - catalogue
       - redis
 
   mysql:
-    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh/mysql:1
+    image: mysql:1
     container_name: mysql
     volumes:
       - mysql:/var/lib/mysql
 
   shipping:
-    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh/shipping:1
+    image: shipping:1
     container_name: shipping
     depends_on:
       - mysql
       - cart
 
   rabbitmq:
-    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh/rabbitmq:3
+    image: rabbitmq:3
     container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: roboshop
@@ -54,7 +54,7 @@ services:
       - rabbitmq:/var/lib/rabbitmq
 
   payment:
-    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh/payment:1
+    image: payment:1
     container_name: payment
     environment:
       CART_HOST: cart
@@ -70,7 +70,7 @@ services:
       - user
 
   frontend:
-    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh/frontend:1
+    image: frontend:1
     container_name: frontend
     ports:
       - "80:80"
