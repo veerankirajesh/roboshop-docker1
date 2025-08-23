@@ -10,45 +10,45 @@ volumes:
   rabbitmq: # docker volume create rabbitmq
 services:
   mongodb:
-    image: mongodb:1
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest mongodb:1
     container_name: mongodb
     volumes:
     - mongodb:/data/db
   catalogue:
-    image: catalogue:1
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest catalogue:1
     container_name: catalogue
     depends_on:
     - mongodb
   redis:
-    image: redis:7.0
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest redis:7.0
     container_name: redis
     volumes:
     - redis:/data
   user:
-    image: user:1
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest user:1
     container_name: user
     depends_on:
     - redis
     - mongodb
   cart:
-    image: cart:1
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest cart:1
     container_name: cart
     depends_on:
     - catalogue
     - redis
   mysql:
-    image: mysql:1
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest mysql:1
     container_name: mysql
     volumes:
     - mysql:/var/lib/mysql
   shipping:
-    image: shipping:1
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest shipping:1
     container_name: shipping
     depends_on:
     - mysql
     - cart
   rabbitmq:
-    image: rabbitmq:3
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest rabbitmq:3
     container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: roboshop
@@ -56,7 +56,7 @@ services:
     volumes:
     - rabbitmq:/var/lib/rabbitmq
   payment:
-    image: payment:1
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest payment:1
     container_name: payment
     environment:
       CART_HOST: cart
@@ -71,7 +71,7 @@ services:
     - cart
     - user
   frontend:
-    image: frontend:1
+    image: 872515251136.dkr.ecr.us-east-1.amazonaws.com/rajesh:latest frontend:1
     container_name: frontend
     ports:
     - "80:80"
