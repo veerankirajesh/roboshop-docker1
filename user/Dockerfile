@@ -9,4 +9,5 @@ RUN npm install
 RUN apt-get update -y \
     && apt-get install net-tools git -y \
     && apt-get clean
+RUN echo hello world    
 CMD ["node","server.js"]
